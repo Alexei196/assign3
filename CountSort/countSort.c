@@ -19,9 +19,8 @@ int main(int argc, char** argv) {
         integerCap = atoi(argv[2]);
     }
     srand(time(NULL));
-    
-
     int *numberArray = malloc(lengthOfArray * sizeof(int));
+
     printf("Unsorted Array: ");
     for(int num = 0; num < lengthOfArray; ++num) {
         numberArray[num] = rand() % integerCap;
@@ -38,6 +37,7 @@ int main(int argc, char** argv) {
 
     printf("\n");
     free(numberArray);
+    return 0;
 }
 
 void Serial_Count_sort(int a[], int n) {

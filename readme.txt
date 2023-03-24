@@ -30,4 +30,6 @@ Answers to HW Questions
 
 (f) qsort uses quick sort to sort an array using a user specified comparator. the average performance of quick sort is O(n log n) which is much longer than O(n). The advantage of qsort is that the comparator can be specified when the command is called allowing for various types of data to be used when the command is called, whereas my implementation uses a static greater than comparison on integers.  
 
-2. (a) 
+2. (a) The outer loop cannot be parallelized because the inner loop relies on previously computed values in x. Should the row = 0 iteration attempt computation while the row = n-1 iteration has not completed, it will attempt to multiply using x[n-1], an currently undefined number. 
+
+(b) The inner loop can be parallelized because the indexes from array x used have already been computed by the serialized outer loop. A parallel implementation here only has to restrict x[row] from concurrent update and share array A across all threads. 
