@@ -3,20 +3,25 @@
 #include<time.h>
 #include<string.h>
 #include<omp.h>
+#include<sys/resource.h>
 
 void Serial_Count_Sort(int[], int);
 void Parallel_Count_Sort(int[], int);
-
+//.out <ARRAY_LENGTH> <INTEGER_CAP>
 int main(int argc, char** argv) {
     int lengthOfArray = 100, integerCap = 100;
+    //Handle inputs and default values.
     if(argc > 1) {
-        if(atoi(argv[1]) == 0) {
-            fprintf(stderr, "Cannot use provided Length");
+        if(atoi(argv[1]) <= 0) {
+            fprintf(stderr, "Cannot use provided Array Length\nDefaulting to %d\n", lengthOfArray);
         }
         lengthOfArray = atoi(argv[1]);
     }
     if(argc > 2) {
-        integerCap = atoi(argv[2]);
+        if(atoi(argv[2]) <= 0) {
+            fprintf(stderr, "Cannot use provided Integer Cap\nDefaulting to %d\n", integerCap);
+        }
+        lengthOfArray = atoi(argv[2]);
     }
     srand(time(NULL));
     int *numberArray = malloc(lengthOfArray * sizeof(int));
@@ -29,13 +34,18 @@ int main(int argc, char** argv) {
     printf("\n");
 
     Parallel_Count_Sort(numberArray, lengthOfArray);
+    //Compute resource usage just after sorting occurs.  
+    struct rusage resourceManager;
+    getrusage(RUSAGE_SELF, &resourceManager);
 
     printf("Sorted Array: ");
     for(int num = 0; num < 100; ++num) {
         printf("%d, ", numberArray[num]);
     }
-
     printf("\n");
+    printf("My System time is %ld.%06ld\n", resourceMeasurer.ru_stime.tv_sec, resourceMeasurer.ru_stime.tv_usec);
+    printf("My User time is %ld.%06ld\n", resourceMeasurer.ru_utime.tv_sec, resourceMeasurer.ru_utime.tv_usec);
+
     free(numberArray);
     return 0;
 }
