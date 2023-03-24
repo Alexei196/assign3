@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
     */
     for(int i = 1; i < argc; ++i) {
         if(strcmp("--help", argv[i]) == 0 || strcmp("-h", argv[i]) == 0) {     
-            printf("Usage: LinearSystem <OPTIONS> <SPECIFIC> \nOptions are:\n-h, --help: Display usage of this program. Does not use variable specific\n-s, --substitution: Specify to use row 'r' or column 'c' focused backwards propagation\n-c, --number_cap: Specifies the highest/lowest possible integer positive/negative to simplify computation\n-t, --thread_count: Specify the integer amount of threads\n-n, --matrix_size: Specify the desired integer size of the matrix used for elimination\n-m, --matrix_type: Specify the use of full random matrix 'r', triangular random matrix 't', or a predefined identity matrix 'p'.");
+            printf("Usage: LinearSystem <OPTIONS> <SPECIFIC> \nOptions are:\n-h, --help: Display usage of this program. Does not use variable specific\n-s, --substitution: Specify to use row 'r' or column 'c' focused backwards propagation\n-c, --number_cap: Specifies the highest/lowest possible integer positive/negative to simplify computation\n-t, --thread_count: Specify the integer amount of threads\n-n, --matrix_size: Specify the desired integer size of the matrix used for elimination\n-m, --matrix_type: Specify the use of full random matrix 'r', triangular random matrix 't', or a predefined identity matrix 'p'.\n");
             exit(0);
         }
         if(argv[i][0] == '-' && (i+1) >= argc) {
@@ -137,11 +137,7 @@ int main(int argc, char** argv) {
         case 'T':
             for(int i = 0; i < n; ++i) {
                 for(int j = 0; j < n; ++j) {
-                    if(i == j) {
-                        array[j + (i*n)] = 1;
-                        continue;
-                    }
-                    if(j > i) {
+                    if(j >= i) {
                         array[j + (i*n)] = RANDOMDOUBLE;
                     } else {
                         array[j + (i*n)] = 0;
@@ -156,7 +152,7 @@ int main(int argc, char** argv) {
         rightHandSide[i] = RANDOMDOUBLE ;
     }
 
-    printf("Before Elimination:");
+    printf("Starting Matrix:");
     displayArray(array, rightHandSide, n);
     //Core of program, all work required by prompt done here
     //Algorithm decides on the solution and then sequentually executes steps until solution is found
