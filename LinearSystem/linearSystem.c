@@ -4,7 +4,7 @@
 #include<time.h>
 #include<string.h>
 #include<sys/resource.h>
-#define RANDOMDOUBLE (double) (rand() % (integerCap*2) - (integerCap / 2));
+#define RANDOMDOUBLE (double) (rand() % (integerCap*2)) - (integerCap);
 
 enum solutionRequired {ELIMINATION='e', SUBSTITUTION='s'};
 
@@ -13,23 +13,29 @@ void columnOriented(double*, double*, double*, int);
 void guassElimination(double*, double*, int);
 void displayArray(double*, double*, int);
 
-/*Introducing Option based command calls!
-  Options are: 
-  -h, --help: Display usage of this program
-  -s, --substitution: Specify whether to use 'r' or 'c' backwards propagation
-  -c, --number_cap: Specifies the highest/lowest possible number positive/negative to simplify computation
-  -t, --thread_count: Specify the amount of threads 
-  -n, --matrix_size: Specify the desired size of the matrix used for elimination 
-  -m, --matrix_type: Specify the use of full random matrix, triangular random matrix, or a predefined identity matrix
- */
+int threadCount = 8;
+
 int main(int argc, char** argv) { 
     char substitutionMethod = 'r', matrixType = 'r', solutionRequired;
-    int n = 4, integerCap = 20, threadCount = 6;
+    int n = 4, integerCap = 20;
     //start at default, then change to specified to command line specified options
+    /*Introducing Option based command calls!
+    Options are: 
+    -h, --help: Display usage of this program. Terminates immediately after discovery.
+    -s, --substitution: Specify whether to use 'r' or 'c' backwards propagation
+    -c, --number_cap: Specifies the highest/lowest possible number positive/negative to simplify computation
+    -t, --thread_count: Specify the amount of threads 
+    -n, --matrix_size: Specify the desired size of the matrix used for elimination 
+    -m, --matrix_type: Specify the use of full random matrix, triangular random matrix, or a predefined identity matrix
+    */
     for(int i = 1; i < argc; ++i) {
         if(strcmp("--help", argv[i]) == 0 || strcmp("-h", argv[i]) == 0) {     
             printf("Usage: LinearSystem <OPTIONS> <SPECIFIC> \nOptions are:\n-h, --help: Display usage of this program. Does not use variable specific\n-s, --substitution: Specify to use row 'r' or column 'c' focused backwards propagation\n-c, --number_cap: Specifies the highest/lowest possible integer positive/negative to simplify computation\n-t, --thread_count: Specify the integer amount of threads\n-n, --matrix_size: Specify the desired integer size of the matrix used for elimination\n-m, --matrix_type: Specify the use of full random matrix 'r', triangular random matrix 't', or a predefined identity matrix 'p'.");
             exit(0);
+        }
+        if(argv[i][0] == '-' && (i+1) >= argc) {
+            fprintf(stderr, "Cannot reach argument of %s\n", argv[i]);
+            break;
         }
         if(strcmp("--substitution", argv[i]) == 0 || strcmp("-s", argv[i]) == 0) {
             switch(argv[++i][0]) {
@@ -40,7 +46,7 @@ int main(int argc, char** argv) {
                     substitutionMethod = argv[i][0];
                 break; 
                 default:
-                    fprintf(stderr, "Substitution option %c is not valid! use r or c!\nDefaulting to %c\n", argv[i][0], substitutionMethod);
+                    fprintf(stderr, "Substitution option %c is not valid! use 'r' or 'c'!\nDefaulting to %c\n", argv[i][0], substitutionMethod);
                 break;
             }
             continue;
@@ -56,7 +62,7 @@ int main(int argc, char** argv) {
                     matrixType = argv[i][0];
                 break; 
                 default:
-                    fprintf(stderr, "Matrix Type option %c is not valid! use r, p or t!\nDefaulting to %c\n", argv[i][0], matrixType);
+                    fprintf(stderr, "Matrix Type option %c is not valid! use 'r', 'p' or 't'!\nDefaulting to %c\n", argv[i][0], matrixType);
                 break;
             }
             continue;
@@ -95,6 +101,10 @@ int main(int argc, char** argv) {
     //Solution required also specified at this level, since already triangular matrixes will not require guassian elimination 
     switch(matrixType){
         //Predefined
+        /* The matrix A and right hand side b are defined as separate by the prompt, but we are asked to compute a given identity matrix, assuming the right most column of the matrix is the right hand array, will result in a no solution matrix.
+
+        To maintain consistency across all matrix types, the predefined matrix A will be treated as separate from b in the algorithm and be given random values of b. This results in an unlikely probalility that the solution array is impossible to find. 
+        */
         case 'p':
         case 'P':
             for(int i = 0; i < n; ++i) {
@@ -179,8 +189,8 @@ int main(int argc, char** argv) {
         printf("%f, ", (double) solutions[i]);
     }
     printf("\n");
-    printf("My System time is %ld.%06ld\n", resourceMeasurer.ru_stime.tv_sec, resourceMeasurer.ru_stime.tv_usec);
-    printf("My User time is %ld.%06ld\n", resourceMeasurer.ru_utime.tv_sec, resourceMeasurer.ru_utime.tv_usec);
+    printf("My System time is %ld.%06ld\n", resourceManager.ru_stime.tv_sec, resourceManager.ru_stime.tv_usec);
+    printf("My User time is %ld.%06ld\n", resourceManager.ru_utime.tv_sec, resourceManager.ru_utime.tv_usec);
     //Deallocation
     free(array);
     free(solutions);
@@ -193,13 +203,12 @@ void rowOriented(double *A, double *b, double*x, int n){
     double sharedSum;
     for(row = n-1; row >= 0; --row) {
         sharedSum = b[row];
-        #pragma omp parallel for num_threads(n - (row+1)) \
-        schedule(runtime) reduction(-: sharedSum) shared(A, row, n) private(column)
+        #pragma omp parallel for num_threads(threadCount) \
+        schedule(dynamic) reduction(-: sharedSum) shared(A, row, n) private(column)
         for(column = row + 1; column < n; ++column) {
             sharedSum -= A[column+(row*n)] * x[column];
         }
         x[row] = sharedSum / A[row+(row*n)];
-
     }
 }
 //Substitution by columns
@@ -210,13 +219,12 @@ void columnOriented(double *A, double *b, double* x,  int  n){
     }
 
     for(column = n-1; column >= 0; --column){
-        x[column] = x[column]/ A[column+(column*n)];
+        x[column] /= A[column+(column*n)];
 
-        #pragma omp parallel for num_threads(column) \
-        schedule(runtime) shared(A, n, x, column) private(row)
+        #pragma omp parallel for num_threads(threadCount) \
+        schedule(dynamic) shared(A, n, x, column) private(row)
         for(row = 0; row < column; ++row) {
              x[row] -= A[column+(row*n)] * x[column];
-             printf("\nDEBUG: %f, %d, %d\n", x[row], row, column);
         }
         
     }
@@ -233,8 +241,8 @@ void guassElimination(double* A, double* b, int n){
             fprintf(stderr, "\nDivision by zero error in elimination at index [%d, %d]!\nError non-recoverable, exiting...\n", i, i);
             exit(-1);
         }
-        #pragma omp parallel for num_threads(i+1) \
-        schedule(runtime) shared(i, n, A, b) private(multiplier, j, t)
+        #pragma omp parallel for num_threads(threadCount) \
+        schedule(dynamic) shared(i, n, A, b) private(multiplier, j, t)
         for(j = i+1; j < n; ++j) {
             multiplier = A[i+(j*n)] / A[i+(i*n)];
             for(t = i; t < n; ++t) {

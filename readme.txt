@@ -17,15 +17,27 @@ Compilation Instructions
 gcc CountSort.c -o CountSort -fopenmp
 gcc LinearSystem.c -o LinearSystem -fopenmp
 
-
 Running Instructions
 ./CountSort <ARRAY_LENGTH> <INTEGER_CAP>
 Array Length: Integer Amount of elements allowed inside of the sorted array
 Integer Cap: Highest amount of an integer allowed inside of the sort.
 
+./LinearSystem <OPTIONS> <SPECIFIC>
+Options are: 
+    -h, --help: Display usage of this program. Terminates immediately after discovery.
+    -s, --substitution: Specify whether to use 'r' or 'c' backwards propagation
+    -c, --number_cap: Specifies the highest/lowest possible number positive/negative when rolling for random doubles on the array. 
+    -t, --thread_count: Specify the amount of threads 
+    -n, --matrix_size: Specify the desired size of the matrix used for elimination 
+    -m, --matrix_type: Specify the use of full random matrix 'r', triangular random matrix 't', or a predefined identity matrix 'p'
+Sample usage: ./LinearSystem -s r -c 100 -t 4 -n 5 -m r
 
-./LinearSystem <> <>
-
+Default values are:
+thread_count = 8 
+substitution_method = 'r'
+matrix_type = 'r'
+matrix_size = 4
+integerCap = 20;
 
 Answers to HW Questions
 1. (a) The outer loop can keep i, j, and count private as they will be specific to the computation of each thread. Array a, n, and temp will all be shared since they will be accessed by all threads.
